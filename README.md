@@ -22,7 +22,7 @@ It includes:
 //without libC
 
 
-BYTE hello_world ="Hello World!!!"; // a pointer to the string hello world 
+BYTE hello_world ="Hello World!!!"; // a varible storing the string
 WORD main(){
     WORD s = 0;
     
