@@ -1,4 +1,4 @@
-# Tenshi-runtime-devkit
+# Tenshi-devkit
 
 
 The sucessor of JS-24-Bit-CPU and an overall better version. 
