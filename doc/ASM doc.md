@@ -1,5 +1,7 @@
-direct = IMM28
 <pre>
+
+direct = IMM28
+
 0x00 LV reg,direct
 0x01 LV reg,[Mem]
 0x02 LV reg,reg
