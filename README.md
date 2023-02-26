@@ -26,8 +26,8 @@ BYTE hello_world ="Hello World!!!"; // a varible storing the string
 WORD main(){
     WORD s = 0;
     
-    while( (BYTE) * (s+$hello_world) != 0 ){
-        (BYTE) *(s) = (BYTE) * (s + $hello_world); // sets the MMIO location 0 to the ascii code C
+    while( (BYTE) * (s+$hello_world) != 0 ){ // loops through hello_world and writes it to the MMIO screen.
+        (BYTE) *(s) = (BYTE) * (s + $hello_world);
    s=s+1; 
    }
 }
