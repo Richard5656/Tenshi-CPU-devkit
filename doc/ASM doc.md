@@ -1,5 +1,5 @@
 direct = IMM28
-
+<pre>
 0x00 LV reg,direct
 0x01 LV reg,[Mem]
 0x02 LV reg,reg
@@ -71,6 +71,6 @@ Flags <- cannot be accesed directly. This may change
 
 COW is the interrupt instruction
 
-
+</pre>
 
 
