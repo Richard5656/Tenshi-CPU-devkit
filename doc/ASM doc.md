@@ -1,5 +1,9 @@
 <pre>
 
+A WORD is 28 bits
+A DBYTE is 16 bits
+A BYTE is 8 bits
+
 direct = IMM28
 
 0x00 LV reg,direct
