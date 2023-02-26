@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<body style = "background-color:black;margin:0;padding:0">
+
+<pre id="hexdmp" style = "float: right;color:white; overflow: scroll;height:400px; width:500px;" ></pre>
+
+<canvas id = "mmio_graph" style ="float:right; align:center" height ="128px" width = "128px"></canvas>
+<pre id="display area" style = "color:white">
+</pre>
+
+
+
+
+
+
+
+<textarea placeholder = "C code goes here" cols = "30" id = "c_code"rows = "10"></textarea>
+<textarea placeholder = "Assembly code goes here" id="asm" cols = "30" rows = "10"></textarea>
+<button id="asm and run" onclick = "compile()">Compile to Assembly</button>
+
+<button onclick = "assembler()">Assemble</button>
+<button onclick = "run()">Run</button>
+<button  onclick = "run_set_int()">run_set_int</button>
+<button  onclick = "step()">Step</button>
+
+
+
+
+<pre id="reg_disp" style = "float: right;color:white;height:200px; width:200px;" ></pre>
+
+
+<div style="float:right">
+<input id = "low" placeholder="low" > <input id = "high" placeholder="high" > <button  onclick = "hexdmp(parseInt(document.getElementById('low').value),parseInt(document.getElementById('high').value))">Dump</button>
+</div>
+<script src="CPU.js"></script>
+<script src="assembler.js"></script>
+<script src="compiler.js"></script>
+<script src="keyboard_module.js"></script>
+</body>
+</html> 
