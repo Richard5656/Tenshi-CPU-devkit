@@ -21,13 +21,15 @@ It includes:
 //an example hello world
 //without libC
 
-WORD hello_world ="Hello World!!!"; // a pointer to the string hello world 
+
+BYTE hello_world ="Hello World!!!"; // a pointer to the string hello world 
 WORD main(){
     WORD s = 0;
     
-    while((BYTE)*(s+hello_world) != 0 ){
-        (BYTE) *(s) = (BYTE)*(s+hello_world); // sets the MMIO location 0 to the ascii code C
-    }
+    while( (BYTE) * (s+$hello_world) != 0 ){
+        (BYTE) *(s) = (BYTE) * (s + $hello_world); // sets the MMIO location 0 to the ascii code C
+   s=s+1; 
+   }
 }
 ```
 
