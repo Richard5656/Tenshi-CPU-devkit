@@ -51,3 +51,5 @@ The song in question is tenshi fureta yo by K-ON!. You could also protray this l
 Or even a tribute to HolyC and Terry A Davis.
 
 But this name fit's perfectly because you could replace C with shi to pronounce it TenC.
+
+<a href= "https://esolangs.org/wiki/Tenshi_C">https://esolangs.org/wiki/Tenshi_C</a>
