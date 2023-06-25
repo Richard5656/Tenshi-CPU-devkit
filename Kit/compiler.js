@@ -11,11 +11,9 @@ function debug_print(e){
 
 var tokens_c = ["size","if","while","for","else","BYTE","DBYTE","WORD","asm_d","return","struct","#w","#b","#d","#fup"];
 var symbols_c = "(){}[]-+*<>/%&^=$!;.".split("");
-var mul_sym_c = [">","<","=","!"];
+var mul_sym_c = [">","<","=","!","+","-"];
 
 var text_sect = ".ORG 0x2000000\n";
-
-
 
 
 var expr_sym = ["+","-"];
@@ -56,7 +54,7 @@ function lexer_c(c_code){
         }
         if(symbols_c.includes(buffer)){
 
-            if(mul_sym_c.includes(c_code[index+1])){
+            if(mul_sym_c.includes(c_code[index+1]) && c_code[index] != '(' && c_code[index] != ')' ){
                 index++;
                 buffer += c_code[index];
                 toks.push({name:buffer,type:"symbol"});
@@ -183,18 +181,21 @@ function decl_pacg(scope){
             let siz = curtok();
             indp++;
             expt_c(";local variblec decl");
-            sym_table[curtok()+"_"+scope] = {type:siz,scope:"local",bpo: bpo_scp[scope]};
+			let exists = sym_table[curtok()+"_"+scope] != undefined;
+            if(!exists) sym_table[curtok()+"_"+scope] = {type:siz,scope:"local",bpo: bpo_scp[scope]};
+			let ident = curtok();
             indp++;
             match("=");
             expt("LV PXD3,BP");
-                  expt("SUB PXD3, " + bpo_scp[scope]);
+                  if(!exists) expt("SUB PXD3, " + bpo_scp[scope]);
+				  if(exists) expt("SUB PXD3, " + sym_table[ident+"_"+scope]["bpo"])
                   expt("PSH PXD3");
             expr_pacg(scope);
             expt("POP A");
                   expt("POP PXD3");
             expt("LV " + siz + " [PXD3], A");
           
-            bpo_scp[scope]+=size_match[siz];
+           if(!exists) bpo_scp[scope]+=size_match[siz];
             match(";");
         }
       
@@ -244,6 +245,17 @@ function func_pacg(){
 
 
 
+function bool_for_pacg(scope){ //bool parse for "for"
+    expt_c(";boolean for pacg")
+    expr_pacg(scope);
+    let cond = curtok();
+    indp++;
+    expr_pacg(scope);
+    expt("POP A");
+    expt("POP C");
+    expt("CMP A,C");
+    return cond;
+}
 
 
 
@@ -287,9 +299,53 @@ function mutate_pacg(scope){
                 }
   
     return siz;
-  
 }
 
+
+function inc_dec_pacg(scope,mode){
+	                        expt_c(";inc or dec a varible");
+                let isparam = false;
+                let islocal = (sym_table[curtok() + "_" + scope] != undefined);
+                if(islocal){
+                    isparam = (sym_table[curtok() + "_" + scope].scope == "param");
+                }
+                let symb = sym_table[curtok() + "_" + scope]; // sym buffer
+
+                if(isparam){
+                    console.log("No params");
+                }else if(islocal){
+					siz = symb.type;
+                    expt("LV PXD3, BP");
+                    expt("SUB PXD3, "+ symb.bpo)
+					expt("LV A, "+ siz + " [PXD3]");
+					indp++;					
+					if(curtok() == "++"){
+						match("++");
+						expt("ADD A, 1");
+					}else if(curtok() == "--"){
+						match("--");
+						expt("SUB A, 1");
+					}
+					
+					expt("LV " + siz + " [PXD3], A");
+					if(mode == "expr") expt("PSH A");
+                }else if(sym_table[curtok()] && sym_table[curtok()].scope == "global"){
+                    siz = sym_table[curtok()].type;
+                    expt("LV PXD3, #"+curtok());
+					expt("LV A, "+ siz + "[PXD3]");
+					indp++;
+					if(curtok() == "++"){
+						match("++");
+						expt("ADD A, 1");
+					}else if(curtok() == "--"){
+						match("--");
+						expt("SUB A, 1");
+					}
+					
+					expt("LV " + siz + "[PXD3], A");
+					if(mode == "expr") expt("PSH A");
+                }
+}
 
 
 function block_pacg(scope){
@@ -327,22 +383,7 @@ function block_pacg(scope){
                 match(";");
             }
         }else if(curtok() == "if"){// if
-                match("if");
-                let label_counter_buffer = label_counter;
-				label_counter++;
-                let cond = bool_pacg(scope);
-                if(cond == "<"){
-                    expt("JG #L"+label_counter_buffer);
-                }else if(cond == ">"){
-                    expt("JL #L"+label_counter_buffer);
-                }else if (cond == "=="){
-                    expt("JNE #L"+label_counter_buffer);
-                }else if(cond == "!="){
-                    expt("JEQ #L"+label_counter_buffer);
-                }
-                block_pacg(scope);
-                expt("LABEL L"+ label_counter_buffer);
-                
+			if_pacg(scope);
         }else if(curtok() == "while"){//while
             match("while");
             let label_counter_buffer = label_counter;
@@ -367,9 +408,43 @@ function block_pacg(scope){
             }
             
             indp= temp_ind1;
-            }else if(toks_c[indp].type == "ident"){
-                       
-                if(lookahead(1) == "("){
+            }else if(curtok() == "for"){
+				match("for");
+
+				let label_counter_buffer = label_counter;
+				label_counter++;
+				match("(");
+				decl_pacg(scope);
+				let temp_ind = indp; // this is a buffer to store the location of the condition
+
+				while(curtok() != '{'){indp++;}
+				expt("JMP #_L"+label_counter_buffer);
+				expt("LABEL L" + label_counter_buffer);
+				block_pacg(scope);
+				let temp_ind1 = indp;
+				indp=temp_ind;
+				while(curtok() != ';'){indp++;}
+				match(";");
+				inc_dec_pacg(scope,"block");
+				expt("LABEL _L" + label_counter_buffer);
+				indp=temp_ind;
+				
+				let cond = bool_for_pacg(scope);
+				if(cond == "<"){
+						expt("JL #L"+label_counter_buffer);
+				}else if(cond == ">"){
+						expt("JG #L"+label_counter_buffer);
+				}else if (cond == "=="){
+						expt("JEQ #L"+label_counter_buffer);
+				}else if(cond == "!="){
+						expt("JNE #L"+label_counter_buffer);
+				}
+				
+				indp= temp_ind1;
+			}else if(toks_c[indp].type == "ident"){
+              if(lookahead(1) == "++" || lookahead(1) == "--"){
+				inc_dec_pacg(scope,"block");
+			  }else if(lookahead(1) == "("){
                     func_call_pacg(scope);
                     match(";");
                 }else if(lookahead(1) == "="){ //mutate a varible
@@ -403,18 +478,45 @@ function block_pacg(scope){
 				match(";");
 			}else if(sizs.includes(curtok())){
                 decl_pacg(scope);
-              
             }else if(curtok() == ";"){
-              
                 match(";");
             }
           
         }
      match("}");
     
-    }
+ }
 	
 	
+function if_pacg(scope){
+	            match("if");
+                let label_counter_buffer = label_counter;
+				label_counter++;
+                let cond = bool_pacg(scope);
+                if(cond == "<"){
+                    expt("JG #L"+label_counter_buffer);
+                }else if(cond == ">"){
+                    expt("JL #L"+label_counter_buffer);
+                }else if (cond == "=="){
+                    expt("JNE #L"+label_counter_buffer);
+                }else if(cond == "!="){
+                    expt("JEQ #L"+label_counter_buffer);
+                }
+                block_pacg(scope);
+				expt("LABEL L"+ label_counter_buffer);
+				if(curtok() == "else" && lookahead(1) == "if"){
+					match("else");
+					if_pacg(scope);
+				} else if(curtok() == "else"){
+					match("else");
+					block_pacg(scope);
+				}
+}
+
+
+
+
+
 function func_call_expr_pacg(scope){
       expt_c(";function call expr")
 
@@ -621,7 +723,9 @@ function factor_pacg(scope){
                 expt_c(";func_expr pacg");
                         func_call_pacg(scope); // function
                 expt("PSH A");
-            }else{
+            }else if(lookahead(1) == "++" || lookahead(1) == "--"){
+				inc_dec_pacg(scope,"expr");
+			}else{
                 //func_name+"_param"
                         console.log(sym_table[curtok() + "_" + scope]);
                         console.log(curtok());
